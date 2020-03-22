@@ -26,12 +26,14 @@ class PIL(QWidget):
         self.point = None
         self.postal = ''
         self.cur_address = ''
+        self.is_post = True
         super().__init__()
         uic.loadUi('alpha.ui', self)
         self.update_pic()
         self.changed.clicked.connect(self.change_sat)
         self.btn_query.clicked.connect(self.find_object)
         self.reset.clicked.connect(self.reset_point)
+        self.btn_index.clicked.connect(self.change_post)
 
     def update_pic(self):
         pic = self.get_picture_from_coordinates(self.ll)
@@ -86,9 +88,7 @@ class PIL(QWidget):
             "format": "json"
         }
         response_toponym = requests.get(self.geocoder_api_server, params=geocoder_params)
-        if not response_toponym:
-            self.address.setText('Wrong Query')
-        else:
+        try:
             json_response = response_toponym.json()
             toponym = json_response["response"]["GeoObjectCollection"][
                 "featureMember"][0]["GeoObject"]
@@ -104,6 +104,8 @@ class PIL(QWidget):
             QApplication.focusWidget().clearFocus()
             self.update_pic()
             self.update_address()
+        except Exception:
+            self.address.setText('Неправильный запрос')
 
     def reset_point(self):
         self.point = None
@@ -113,8 +115,16 @@ class PIL(QWidget):
         self.update_pic()
 
     def update_address(self):
-        postal = str(', ' + self.postal) if self.post.checkState() else ''
+        postal = str(', ' + self.postal) if self.is_post else ''
         self.address.setText(self.cur_address + postal)
+
+    def change_post(self):
+        if self.is_post:
+            self.btn_index.setText('Индекс: выкл.')
+        else:
+            self.btn_index.setText('Индекс: вкл.')
+        self.is_post = not self.is_post
+        self.update_address()
 
 
 if __name__ == '__main__':
