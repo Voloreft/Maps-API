@@ -1,7 +1,7 @@
 import requests
 import pygame
 
-coords = '52.299427,54.898788' # Альметьевск
+coords = '52.299427,54.898788'  # Альметьевск
 spns = '0.005,0.005'
 
 geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
