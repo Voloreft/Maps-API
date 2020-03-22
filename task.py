@@ -24,15 +24,19 @@ class PIL(QWidget):
         self.type = 'map'
         self.z = '15'
         self.point = None
+        self.postal = ''
+        self.cur_address = ''
         super().__init__()
         uic.loadUi('alpha.ui', self)
         self.update_pic()
         self.changed.clicked.connect(self.change_sat)
         self.btn_query.clicked.connect(self.find_object)
+        self.reset.clicked.connect(self.reset_point)
 
     def update_pic(self):
         pic = self.get_picture_from_coordinates(self.ll)
         self.set_picture(pic)
+        self.update_address()
 
     def set_picture(self, pic):
         self.picture.setPixmap(QPixmap.fromImage(QImage.fromData(pic)))
@@ -70,6 +74,7 @@ class PIL(QWidget):
     def change_sat(self):
         cur = self.sat_type.currentText()
         self.type = self.sat[cur]
+        self.update_address()
         QApplication.focusWidget().clearFocus()
         self.update_pic()
 
@@ -82,17 +87,34 @@ class PIL(QWidget):
         }
         response_toponym = requests.get(self.geocoder_api_server, params=geocoder_params)
         if not response_toponym:
-            print('Wrong query')
-            exit(0)
+            self.address.setText('Wrong Query')
+        else:
+            json_response = response_toponym.json()
+            toponym = json_response["response"]["GeoObjectCollection"][
+                "featureMember"][0]["GeoObject"]
+            toponym_coodrinates = toponym["Point"]["pos"]
+            address = toponym['metaDataProperty']['GeocoderMetaData']['Address']['formatted']
+            if 'postal_code' in toponym['metaDataProperty']['GeocoderMetaData']['Address']:
+                self.postal = toponym['metaDataProperty']['GeocoderMetaData']['Address']['postal_code']
+            else:
+                self.postal = 'нет почтового индекса'
+            self.ll = tuple(map(float, toponym_coodrinates.split(" ")))
+            self.point = f'{self.ll[0]},{self.ll[1]},pm2dgl'
+            self.cur_address = address
+            QApplication.focusWidget().clearFocus()
+            self.update_pic()
+            self.update_address()
 
-        json_response = response_toponym.json()
-        toponym = json_response["response"]["GeoObjectCollection"][
-            "featureMember"][0]["GeoObject"]
-        toponym_coodrinates = toponym["Point"]["pos"]
-        self.ll = tuple(map(float, toponym_coodrinates.split(" ")))
-        self.point = f'{self.ll[0]},{self.ll[1]},pm2dgl'
+    def reset_point(self):
+        self.point = None
+        self.cur_address = ''
+        self.postal = ''
         QApplication.focusWidget().clearFocus()
         self.update_pic()
+
+    def update_address(self):
+        postal = str(', ' + self.postal) if self.post.checkState() else ''
+        self.address.setText(self.cur_address + postal)
 
 
 if __name__ == '__main__':
