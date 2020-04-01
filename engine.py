@@ -29,7 +29,7 @@ class PIL(QWidget):
         self.cur_address = ''
         self.is_post = True
         super().__init__()
-        uic.loadUi('alpha.ui', self)
+        uic.loadUi('alpha.ui', self)  # этот файл есть в репозитории
         self.update_pic()
         self.changed.clicked.connect(self.change_sat)
         self.btn_query.clicked.connect(self.find_object)
